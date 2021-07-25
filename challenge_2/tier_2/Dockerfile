@@ -1,4 +1,6 @@
-FROM ruby:3.0.1-alpine
+FROM ruby:2.7.3-alpine
+
+ENV APP_ENV production
 
 ## Set up SSH
 RUN apk add --no-cache openssh
@@ -13,4 +15,8 @@ RUN ssh-keygen -A && \
   # Remove the welcome message
   rm /etc/motd
 
-CMD /usr/sbin/sshd -D
+# Web app
+WORKDIR /app
+COPY ./ ./
+CMD /usr/sbin/sshd && \
+    ruby -rwebrick -e'WEBrick::HTTPServer.new(Port: 8000, DocumentRoot: File.join(Dir.pwd, "static")).start'
