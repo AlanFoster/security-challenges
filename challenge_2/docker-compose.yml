@@ -6,32 +6,65 @@ networks:
   tier_3: { }
 
 services:
-  tier_1:
+  kong_database:
+    image: postgres:9.6-alpine
+    networks:
+      - tier_1
+    environment:
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=kong
+    restart: unless-stopped
+
+  # throw away container for migration purposes
+  kong_migration: &kong_migration
+    image: kong:2.1.4-alpine
     build:
-      context: ./tier_1
+      context: ./kong
+    restart: unless-stopped
+    networks:
+      - tier_1
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong_database
+      - KONG_PG_USER=admin
+      - KONG_PG_PASSWORD=admin
+    command: kong migrations bootstrap
+
+  kong_configure:
+    <<: *kong_migration
+    restart: unless-stopped
+    command: /configure-services.sh
+
+  kong:
+    build:
+      context: ./kong
     networks:
       - tier_1
       - tier_2
     restart: unless-stopped
     environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong_database
+      - KONG_PG_USER=admin
+      - KONG_PG_PASSWORD=admin
+
       - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
     ports:
-      # public facing site
       - '8000:8000'
-      # admin
       - '8001:8001'
 
-  tier_2:
+  webservice:
     build:
-      context: ./tier_2
+      context: ./webservice
     networks:
       - tier_1
       - tier_2
     restart: unless-stopped
 
-  tier_3:
+  webservice_database:
     build:
-      context: ./tier_3
+      context: ./webservice_database
     networks:
       - tier_3
     environment:
