@@ -1,0 +1,9 @@
+production:
+  adapter: postgres
+  encoding: utf8
+  reconnect: false
+  database: 172.18.103.30
+  pool: 5
+  username: admin
+  password: admin
+  socket: /tmp/mysql.sock

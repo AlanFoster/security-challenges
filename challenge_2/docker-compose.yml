@@ -1,15 +1,25 @@
 version: "3"
 
 networks:
-  tier_1: { }
-  tier_2: { }
-  tier_3: { }
+  tier_1:
+    ipam:
+      config:
+        - subnet: 172.18.101.0/24
+  tier_2:
+    ipam:
+      config:
+        - subnet: 172.18.102.0/24
+  tier_3:
+    ipam:
+      config:
+        - subnet: 172.18.103.0/24
 
 services:
   kong_database:
     image: postgres:9.6-alpine
     networks:
-      - tier_1
+      tier_1:
+        ipv4_address: 172.18.101.50
     environment:
       - POSTGRES_PASSWORD=admin
       - POSTGRES_USER=admin
@@ -17,31 +27,33 @@ services:
     restart: unless-stopped
 
   # throw away container for migration purposes
-  kong_migration: &kong_migration
-    image: kong:2.1.4-alpine
+  kong_migration:
+    depends_on:
+      - kong_database
     build:
       context: ./kong
-    restart: unless-stopped
     networks:
-      - tier_1
+      tier_1:
+        ipv4_address: 172.18.101.51
+    # The container will restart until its first non-zero exit code, i.e. succeeding the initial migration/seeding
+    restart: on-failure
     environment:
       - KONG_DATABASE=postgres
       - KONG_PG_HOST=kong_database
       - KONG_PG_USER=admin
       - KONG_PG_PASSWORD=admin
-    command: kong migrations bootstrap
-
-  kong_configure:
-    <<: *kong_migration
-    restart: unless-stopped
-    command: /configure-services.sh
+    command: /bin/bash -c "kong migrations bootstrap && /configure-services.sh"
 
   kong:
+    depends_on:
+      - kong_database
     build:
       context: ./kong
     networks:
-      - tier_1
-      - tier_2
+      tier_1:
+        ipv4_address: 172.18.101.10
+      tier_2:
+        ipv4_address: 172.18.102.10
     restart: unless-stopped
     environment:
       - KONG_DATABASE=postgres
@@ -55,19 +67,31 @@ services:
       - '8001:8001'
 
   webservice:
+    depends_on:
+      - webservice_database
     build:
       context: ./webservice
     networks:
-      - tier_1
-      - tier_2
+      tier_1:
+        ipv4_address: 172.18.101.20
+      tier_2:
+        ipv4_address: 172.18.102.20
+      tier_3:
+        ipv4_address: 172.18.103.20
     restart: unless-stopped
 
   webservice_database:
     build:
       context: ./webservice_database
     networks:
-      - tier_3
+      tier_2:
+        ipv4_address: 172.18.102.30
+      tier_3:
+        ipv4_address: 172.18.103.30
     environment:
+      - POSTGRES_DB=postgres
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
     restart: unless-stopped
+    ports:
+      - '6000:5432'
