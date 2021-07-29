@@ -93,5 +93,3 @@ services:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
     restart: unless-stopped
-    ports:
-      - '6000:5432'
