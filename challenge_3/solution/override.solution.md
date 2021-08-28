@@ -1,3 +1,8 @@
+### Solution
+
+This document covers the use of buffer overflows to overwrite local variables
+to influence behavior.
+
 ### Identification
 
 Run the application and see that it asks for user input:
@@ -86,9 +91,16 @@ ruby  ./tools/exploit/pattern_offset.rb -l 50 -q 0x31624130
 
 So we can write 32 characters before hitting the `is_admin` value in the stack.
 
-### Final
+### Final Solution
+
+Verify the payload works as expected:
+
+```
+python3 ./override.py | xxd
+```
 
 Remember to keep stdin open:
+
 ```
 (python3 override.py; echo ''; cat) | ./secure_shell
 ```

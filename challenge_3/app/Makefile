@@ -7,6 +7,7 @@ CFLAGS := \
 	-fno-stack-protector \
 	-Wl,-z,norelro \
 	-g \
+	-no-pie \
 	-m32
 
 secure_shell: secure_shell.c

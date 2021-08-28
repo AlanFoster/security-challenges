@@ -2,6 +2,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+void open_shell() {
+    setuid(0);
+    setgid(0);
+    system("/bin/bash");
+}
+
 void login(){
     int is_admin = 0;
     char password[32];
@@ -11,9 +17,7 @@ void login(){
     // is_admin = strcmp(password, "TODO") == 0;
     if (is_admin == 1) {
         printf("Access granted\n");
-        setuid(0);
-        setgid(0);
-        system("/bin/bash");
+        open_shell();
     } else {
         printf("Access denied\n");
     }
