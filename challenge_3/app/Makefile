@@ -7,8 +7,9 @@ CFLAGS := \
 	-fno-stack-protector \
 	-Wl,-z,norelro \
 	-g \
+	-m32 \
 	-no-pie \
-	-m32
+	-z execstack
 
 secure_shell: secure_shell.c
 	${CC} ${CFLAGS} -o $@  $^
